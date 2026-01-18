@@ -8,6 +8,7 @@
 - Added support for octet (`kty: "oct"`) JWK inputs when signing or verifying HMAC tokens.
 - Added `typ` header validation support with TypeScript-compatible media type normalization.
 - Added `max_token_age` validation with human-readable time span parsing to align with TypeScript `maxTokenAge` behavior.
+- Added human-readable time span parsing for `leeway` (clock tolerance) when validating time-based claims.
 - Added rejection of JWTs that request unencoded payloads via `crit: ["b64"]` and `b64: false`.
 - Added `crit` header validation for JWTs, enforcing recognized parameters and required protected values.
 
@@ -69,6 +70,27 @@
       'iat',
       'check_failed',
     )
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
+
+- Clock tolerance parsing aligns with the TypeScript `clockTolerance` handling:
+
+  ```ts
+  let tolerance: number
+  switch (typeof options.clockTolerance) {
+    case 'string':
+      tolerance = secs(options.clockTolerance)
+      break
+    case 'number':
+      tolerance = options.clockTolerance
+      break
+    case 'undefined':
+      tolerance = 0
+      break
+    default:
+      throw new TypeError('Invalid clockTolerance option type')
   }
   ```
 

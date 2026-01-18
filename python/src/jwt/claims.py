@@ -12,7 +12,7 @@ from .utils import parse_timespan
 
 @dataclass(frozen=True)
 class ValidationOptions:
-    leeway: int = 0
+    leeway: int | str = 0
     now: Optional[int] = None
     typ: Optional[str] = None
     require_exp: bool = False
@@ -91,13 +91,26 @@ def _normalize_max_token_age(value: int | str) -> int:
     raise InvalidClaimError("Max token age must be a number or string")
 
 
+def _normalize_leeway(value: int | str) -> int:
+    if isinstance(value, bool):
+        raise InvalidClaimError("Clock tolerance must be a number or string")
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return parse_timespan(value)
+        except InvalidTokenError as exc:
+            raise InvalidClaimError("Clock tolerance must be a valid time span string") from exc
+    raise InvalidClaimError("Clock tolerance must be a number or string")
+
+
 def validate_standard_claims(
     payload: Mapping[str, Any],
     options: ValidationOptions,
     header: Optional[Mapping[str, Any]] = None,
 ) -> None:
     now = options.current_time()
-    leeway = options.leeway
+    leeway = _normalize_leeway(options.leeway)
 
     if options.typ is not None:
         header_value = None if header is None else header.get("typ")
