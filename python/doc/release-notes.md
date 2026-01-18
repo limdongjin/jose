@@ -7,6 +7,7 @@
 - Added audience list matching and string-type enforcement for standard identity claims.
 - Added support for octet (`kty: "oct"`) JWK inputs when signing or verifying HMAC tokens.
 - Added `typ` header validation support with TypeScript-compatible media type normalization.
+- Added `max_token_age` validation with human-readable time span parsing to align with TypeScript `maxTokenAge` behavior.
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
@@ -49,6 +50,32 @@
 
     return `application/${value.toLowerCase()}`
   }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
+
+- `maxTokenAge` parsing and enforcement mirror the TypeScript `secs` helper and age checks:
+
+  ```ts
+  const max = typeof maxTokenAge === 'number' ? maxTokenAge : secs(maxTokenAge)
+
+  if (age - tolerance > max) {
+    throw new JWTExpired(
+      '"iat" claim timestamp check failed (too far in the past)',
+      payload,
+      'iat',
+      'check_failed',
+    )
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
+
+- Human-readable time spans follow the same regex and unit mapping as the TypeScript helper:
+
+  ```ts
+  const REGEX =
+    /^(\+|\-)? ?(\d+|\d+\.\d+) ?(seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|weeks?|w|years?|yrs?|y)(?: (ago|from now))?$/i
   ```
 
   (Source: `src/lib/jwt_claims_set.ts`)

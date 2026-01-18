@@ -6,7 +6,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Iterable, Mapping, Optional
 
-from .errors import InvalidClaimError
+from .errors import InvalidClaimError, InvalidTokenError
+from .utils import parse_timespan
 
 
 @dataclass(frozen=True)
@@ -24,6 +25,7 @@ class ValidationOptions:
     issuer: Optional[str | Iterable[str]] = None
     subject: Optional[str] = None
     audience: Optional[str | Iterable[str]] = None
+    max_token_age: Optional[int | str] = None
 
     def current_time(self) -> int:
         if self.now is not None:
@@ -76,6 +78,19 @@ def _normalize_typ(value: str) -> str:
     return f"application/{value.lower()}"
 
 
+def _normalize_max_token_age(value: int | str) -> int:
+    if isinstance(value, bool):
+        raise InvalidClaimError("Max token age must be a number or string")
+    if isinstance(value, (int, float)):
+        return int(value)
+    if isinstance(value, str):
+        try:
+            return parse_timespan(value)
+        except InvalidTokenError as exc:
+            raise InvalidClaimError("Max token age must be a valid time span string") from exc
+    raise InvalidClaimError("Max token age must be a number or string")
+
+
 def validate_standard_claims(
     payload: Mapping[str, Any],
     options: ValidationOptions,
@@ -94,6 +109,8 @@ def validate_standard_claims(
     if options.require_nbf and "nbf" not in payload:
         raise InvalidClaimError("Claim 'nbf' is required")
     if options.require_iat and "iat" not in payload:
+        raise InvalidClaimError("Claim 'iat' is required")
+    if options.max_token_age is not None and "iat" not in payload:
         raise InvalidClaimError("Claim 'iat' is required")
     if options.require_iss and "iss" not in payload:
         raise InvalidClaimError("Claim 'iss' is required")
@@ -149,3 +166,8 @@ def validate_standard_claims(
         iat = _ensure_int(payload["iat"], "iat")
         if now + leeway < iat:
             raise InvalidClaimError("Token was issued in the future")
+
+        if options.max_token_age is not None:
+            max_age = _normalize_max_token_age(options.max_token_age)
+            if now - iat - leeway > max_age:
+                raise InvalidClaimError("Token is too old")
