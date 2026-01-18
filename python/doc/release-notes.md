@@ -6,6 +6,7 @@
 - Added issuer (`iss`), subject (`sub`), audience (`aud`), and JWT ID (`jti`) claim validation options.
 - Added audience list matching and string-type enforcement for standard identity claims.
 - Added support for octet (`kty: "oct"`) JWK inputs when signing or verifying HMAC tokens.
+- Added `typ` header validation support with TypeScript-compatible media type normalization.
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
@@ -33,6 +34,20 @@
       'aud',
       'check_failed',
     )
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
+
+- `typ` header normalization and matching follow the TypeScript helper:
+
+  ```ts
+  const normalizeTyp = (value: string) => {
+    if (value.includes('/')) {
+      return value.toLowerCase()
+    }
+
+    return `application/${value.toLowerCase()}`
   }
   ```
 

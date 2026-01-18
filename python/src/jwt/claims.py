@@ -13,6 +13,7 @@ from .errors import InvalidClaimError
 class ValidationOptions:
     leeway: int = 0
     now: Optional[int] = None
+    typ: Optional[str] = None
     require_exp: bool = False
     require_nbf: bool = False
     require_iat: bool = False
@@ -69,9 +70,24 @@ def _normalize_audience(value: Any) -> list[str]:
     raise InvalidClaimError("Claim 'aud' must be a string or list of strings")
 
 
-def validate_standard_claims(payload: Mapping[str, Any], options: ValidationOptions) -> None:
+def _normalize_typ(value: str) -> str:
+    if "/" in value:
+        return value.lower()
+    return f"application/{value.lower()}"
+
+
+def validate_standard_claims(
+    payload: Mapping[str, Any],
+    options: ValidationOptions,
+    header: Optional[Mapping[str, Any]] = None,
+) -> None:
     now = options.current_time()
     leeway = options.leeway
+
+    if options.typ is not None:
+        header_value = None if header is None else header.get("typ")
+        if not isinstance(header_value, str) or _normalize_typ(header_value) != _normalize_typ(options.typ):
+            raise InvalidClaimError("Header 'typ' does not match expected value")
 
     if options.require_exp and "exp" not in payload:
         raise InvalidClaimError("Claim 'exp' is required")
