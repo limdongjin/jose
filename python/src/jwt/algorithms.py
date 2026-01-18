@@ -36,6 +36,8 @@ class HMACAlgorithm:
 
 _ALGORITHMS: Dict[str, Algorithm] = {
     "HS256": HMACAlgorithm(name="HS256", digestmod="sha256"),
+    "HS384": HMACAlgorithm(name="HS384", digestmod="sha384"),
+    "HS512": HMACAlgorithm(name="HS512", digestmod="sha512"),
 }
 
 

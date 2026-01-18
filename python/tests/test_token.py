@@ -27,6 +27,18 @@ class TokenTests(unittest.TestCase):
         verified = verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_000))
         self.assertEqual(verified["sub"], "user-123")
 
+    def test_encode_decode_roundtrip_for_hs384_hs512(self) -> None:
+        payload = {"sub": "user-123", "exp": 1_800_000_000}
+        for alg in ("HS384", "HS512"):
+            token = encode(payload, "secret", alg)
+
+            result = decode(token)
+            self.assertEqual(result.header["alg"], alg)
+            self.assertEqual(result.payload["sub"], "user-123")
+
+            verified = verify(token, "secret", algorithms=[alg], options=ValidationOptions(now=1_700_000_000))
+            self.assertEqual(verified["sub"], "user-123")
+
     def test_verify_rejects_invalid_signature(self) -> None:
         payload = {"sub": "user-123", "exp": 1_800_000_000}
         token = encode(payload, "secret", "HS256")
