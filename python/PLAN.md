@@ -48,6 +48,7 @@
   - `typ` 헤더 검증 옵션 추가(미디어 타입 정규화 포함).
   - `max_token_age` 옵션과 사람이 읽을 수 있는 시간 문자열 파싱(`iat` 강제 포함) 추가.
   - `exp` 만료 경계 및 `max_token_age` 사용 시 `iat` 미래 허용치 검증을 TS 로직과 정렬.
+  - `leeway`(clock tolerance) 옵션에 사람이 읽을 수 있는 시간 문자열 파싱 추가.
 
 ### 3.4 token.py
 

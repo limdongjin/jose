@@ -73,7 +73,7 @@ payload = verify(
     token,
     \"secret\",
     algorithms=[\"HS256\"],
-    options=ValidationOptions(leeway=10, issuer=\"https://issuer.example\"),
+    options=ValidationOptions(leeway=\"10 seconds\", issuer=\"https://issuer.example\"),
 )
 print(payload[\"sub\"])
 ```

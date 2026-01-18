@@ -13,6 +13,7 @@
 - Added `kty: "oct"` JWK handling for HMAC keys to align with TypeScript import behavior.
 - Added `typ` header validation with media type normalization to align with TypeScript JWT verification.
 - Added `max_token_age` validation and human-readable time span parsing for `iat` claim enforcement.
+- Added human-readable time span parsing for `leeway` (clock tolerance) when validating time-based claims.
 - Added a JWT verification guard that rejects `crit: ["b64"]` with `b64: false` unencoded payload requests.
 - Added `crit` header validation for JWTs to enforce recognized parameters and `b64` boolean handling.
 
@@ -106,3 +107,24 @@
   ```
 
   (Source: `src/jws/flattened/verify.ts`)
+
+- Clock tolerance parsing mirrors the TypeScript `clockTolerance` handling:
+
+  ```ts
+  let tolerance: number
+  switch (typeof options.clockTolerance) {
+    case 'string':
+      tolerance = secs(options.clockTolerance)
+      break
+    case 'number':
+      tolerance = options.clockTolerance
+      break
+    case 'undefined':
+      tolerance = 0
+      break
+    default:
+      throw new TypeError('Invalid clockTolerance option type')
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)

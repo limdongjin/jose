@@ -71,6 +71,28 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidClaimError):
             verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_000))
 
+    def test_verify_accepts_timespan_leeway(self) -> None:
+        payload = {"sub": "user-123", "exp": 1_700_000_000}
+        token = encode(payload, "secret", "HS256")
+        verified = verify(
+            token,
+            "secret",
+            algorithms=["HS256"],
+            options=ValidationOptions(now=1_700_000_005, leeway="10 seconds"),
+        )
+        self.assertEqual(verified["sub"], "user-123")
+
+    def test_verify_rejects_invalid_leeway_timespan(self) -> None:
+        payload = {"sub": "user-123", "exp": 1_700_000_000}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(
+                token,
+                "secret",
+                algorithms=["HS256"],
+                options=ValidationOptions(now=1_700_000_005, leeway="soon"),
+            )
+
     def test_verify_validates_issuer_subject_audience(self) -> None:
         payload = {"iss": "issuer-a", "sub": "user-123", "aud": ["service-a", "service-b"]}
         token = encode(payload, "secret", "HS256")
