@@ -84,6 +84,6 @@ def verify(
     algorithm.verify(ensure_bytes(key), result.signing_input, result.signature)
 
     validation_options = options or ValidationOptions()
-    validate_standard_claims(result.payload, validation_options)
+    validate_standard_claims(result.payload, validation_options, header=result.header)
 
     return result.payload

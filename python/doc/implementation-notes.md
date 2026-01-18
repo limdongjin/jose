@@ -11,6 +11,7 @@
 - Added issuer (`iss`), subject (`sub`), audience (`aud`), and JWT ID (`jti`) validation with optional requirements.
 - Added unit tests for token encoding, decoding, verification, and claim validation.
 - Added `kty: "oct"` JWK handling for HMAC keys to align with TypeScript import behavior.
+- Added `typ` header validation with media type normalization to align with TypeScript JWT verification.
 
 ## Design notes
 
@@ -39,3 +40,17 @@
   ```
 
   (Source: `src/key/import.ts`)
+
+- `typ` header matching follows the TypeScript `normalizeTyp` helper:
+
+  ```ts
+  const normalizeTyp = (value: string) => {
+    if (value.includes('/')) {
+      return value.toLowerCase()
+    }
+
+    return `application/${value.toLowerCase()}`
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
