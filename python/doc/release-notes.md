@@ -15,6 +15,7 @@
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
 - Aligned `exp` boundary handling and `iat` future checks with the TypeScript `validateClaimsSet` behavior.
+- `encode` now leaves `typ` unset unless explicitly provided and rejects `crit: ["b64"]` with `b64: false` during signing.
 
 ### References (TypeScript parity)
 - Claim presence and issuer/subject/audience matching mirror the TypeScript validation flow:
@@ -128,6 +129,26 @@
   ```
 
   (Source: `src/jwt/verify.ts`)
+
+- SignJWT signing uses only explicitly provided protected headers and rejects unencoded payload requests:
+
+  ```ts
+  const sig = new CompactSign(this.#jwt.data())
+  sig.setProtectedHeader(this.#protectedHeader)
+  ```
+
+  ```ts
+  if (
+    Array.isArray(this.#protectedHeader?.crit) &&
+    this.#protectedHeader.crit.includes('b64') &&
+    // @ts-expect-error
+    this.#protectedHeader.b64 === false
+  ) {
+    throw new JWTInvalid('JWTs MUST NOT use unencoded payload')
+  }
+  ```
+
+  (Source: `src/jwt/sign.ts`)
 
 - Critical header validation and `b64` type checks follow the TypeScript `validateCrit` helper and JWS verification logic:
 
