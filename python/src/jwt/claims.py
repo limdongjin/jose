@@ -154,7 +154,7 @@ def validate_standard_claims(
 
     if "exp" in payload:
         exp = _ensure_int(payload["exp"], "exp")
-        if now > exp + leeway:
+        if now >= exp + leeway:
             raise InvalidClaimError("Token has expired")
 
     if "nbf" in payload:
@@ -164,10 +164,10 @@ def validate_standard_claims(
 
     if "iat" in payload:
         iat = _ensure_int(payload["iat"], "iat")
-        if now + leeway < iat:
-            raise InvalidClaimError("Token was issued in the future")
-
         if options.max_token_age is not None:
             max_age = _normalize_max_token_age(options.max_token_age)
-            if now - iat - leeway > max_age:
+            age = now - iat
+            if age - leeway > max_age:
                 raise InvalidClaimError("Token is too old")
+            if age < -leeway:
+                raise InvalidClaimError("Token was issued in the future")
