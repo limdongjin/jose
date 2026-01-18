@@ -8,6 +8,7 @@
 - Added support for octet (`kty: "oct"`) JWK inputs when signing or verifying HMAC tokens.
 - Added `typ` header validation support with TypeScript-compatible media type normalization.
 - Added `max_token_age` validation with human-readable time span parsing to align with TypeScript `maxTokenAge` behavior.
+- Added rejection of JWTs that request unencoded payloads via `crit: ["b64"]` and `b64: false`.
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
@@ -94,6 +95,16 @@
   ```
 
   (Source: `src/lib/jwt_claims_set.ts`)
+
+- JWTs reject the JWS unencoded payload extension when `crit` includes `b64` and `b64` is `false`:
+
+  ```ts
+  if (verified.protectedHeader.crit?.includes('b64') && verified.protectedHeader.b64 === false) {
+    throw new JWTInvalid('JWTs MUST NOT use unencoded payload')
+  }
+  ```
+
+  (Source: `src/jwt/verify.ts`)
 
 - Human-readable time spans follow the same regex and unit mapping as the TypeScript helper:
 
