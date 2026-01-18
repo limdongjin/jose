@@ -8,7 +8,7 @@ from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 from .algorithms import get_algorithm
 from .claims import ValidationOptions, validate_standard_claims
 from .errors import InvalidSignatureError, InvalidTokenError
-from .keys import ensure_bytes
+from .keys import KeyLike, ensure_bytes
 from .utils import b64url_decode, b64url_encode, json_dumps, json_loads
 
 
@@ -44,7 +44,7 @@ def decode(token: str) -> DecodeResult:
 
 def encode(
     payload: Mapping[str, Any],
-    key: bytes | str,
+    key: KeyLike,
     alg: str,
     headers: Optional[Mapping[str, Any]] = None,
 ) -> str:
@@ -68,7 +68,7 @@ def encode(
 
 def verify(
     token: str,
-    key: bytes | str,
+    key: KeyLike,
     algorithms: Optional[Iterable[str]] = None,
     options: Optional[ValidationOptions] = None,
 ) -> Dict[str, Any]:

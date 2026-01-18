@@ -51,6 +51,14 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidSignatureError):
             verify(token, "secret", algorithms=["HS384"], options=ValidationOptions(now=1_700_000_000))
 
+    def test_encode_verify_with_oct_jwk(self) -> None:
+        payload = {"sub": "user-123", "exp": 1_800_000_000}
+        jwk = {"kty": "oct", "k": "c2VjcmV0"}
+
+        token = encode(payload, jwk, "HS256")
+        verified = verify(token, jwk, algorithms=["HS256"], options=ValidationOptions(now=1_700_000_000))
+        self.assertEqual(verified["sub"], "user-123")
+
     def test_verify_rejects_expired_token(self) -> None:
         payload = {"sub": "user-123", "exp": 1_700_000_000}
         token = encode(payload, "secret", "HS256")

@@ -10,6 +10,7 @@
 - Added `encode`, `decode`, and `verify` helpers plus basic claim validation for `exp`, `nbf`, and `iat`.
 - Added issuer (`iss`), subject (`sub`), audience (`aud`), and JWT ID (`jti`) validation with optional requirements.
 - Added unit tests for token encoding, decoding, verification, and claim validation.
+- Added `kty: "oct"` JWK handling for HMAC keys to align with TypeScript import behavior.
 
 ## Design notes
 
@@ -21,5 +22,20 @@
 ## Next steps
 
 - Extend algorithm support (RSA, ECDSA).
-- Add key parsing helpers for PEM/JWK inputs.
+- Add key parsing helpers for PEM and asymmetric JWK inputs.
 - Build tests and compatibility vectors aligned with the TypeScript implementation.
+
+## TypeScript parity references
+
+- Symmetric JWK import behavior follows the TypeScript `importJWK` `oct` branch:
+
+  ```ts
+  case 'oct':
+    if (typeof jwk.k !== 'string' || !jwk.k) {
+      throw new TypeError('missing "k" (Key Value) Parameter value')
+    }
+
+    return decodeBase64URL(jwk.k)
+  ```
+
+  (Source: `src/key/import.ts`)

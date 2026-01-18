@@ -5,6 +5,7 @@
 ### Added
 - Added issuer (`iss`), subject (`sub`), audience (`aud`), and JWT ID (`jti`) claim validation options.
 - Added audience list matching and string-type enforcement for standard identity claims.
+- Added support for octet (`kty: "oct"`) JWK inputs when signing or verifying HMAC tokens.
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
@@ -36,6 +37,19 @@
   ```
 
   (Source: `src/lib/jwt_claims_set.ts`)
+
+- JWK `oct` key handling mirrors the TypeScript `importJWK` branch for symmetric keys:
+
+  ```ts
+  case 'oct':
+    if (typeof jwk.k !== 'string' || !jwk.k) {
+      throw new TypeError('missing "k" (Key Value) Parameter value')
+    }
+
+    return decodeBase64URL(jwk.k)
+  ```
+
+  (Source: `src/key/import.ts`)
 
 ### Previously Added
 - Added HS384 and HS512 HMAC variants to the Python JWT algorithm registry.
