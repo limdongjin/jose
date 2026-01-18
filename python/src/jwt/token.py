@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
+from typing import Any, Dict, Iterable, Mapping, Optional, Set, Tuple
 
 from .algorithms import get_algorithm
 from .claims import ValidationOptions, validate_standard_claims
@@ -25,6 +25,25 @@ def _split_token(token: str) -> Tuple[str, str, str]:
     if len(parts) != 3:
         raise InvalidTokenError("Token must have exactly three parts")
     return parts[0], parts[1], parts[2]
+
+
+def _validate_crit(header: Mapping[str, Any], recognized: Iterable[str]) -> Set[str]:
+    crit = header.get("crit")
+    if crit is None:
+        return set()
+    if not isinstance(crit, list) or not crit or any(not isinstance(item, str) or not item for item in crit):
+        raise InvalidTokenError(
+            '"crit" (Critical) Header Parameter MUST be an array of non-empty strings when present'
+        )
+
+    recognized_params = set(recognized)
+    for param in crit:
+        if param not in recognized_params:
+            raise InvalidTokenError(f'Extension Header Parameter "{param}" is not recognized')
+        if param not in header:
+            raise InvalidTokenError(f'Extension Header Parameter "{param}" is missing')
+
+    return set(crit)
 
 
 def decode(token: str) -> DecodeResult:
@@ -83,9 +102,15 @@ def verify(
     algorithm = get_algorithm(alg)
     algorithm.verify(ensure_bytes(key), result.signing_input, result.signature)
 
-    crit = result.header.get("crit")
-    if isinstance(crit, list) and "b64" in crit and result.header.get("b64") is False:
-        raise InvalidTokenError("JWTs MUST NOT use unencoded payload")
+    extensions = _validate_crit(result.header, {"b64"})
+    if "b64" in extensions:
+        b64 = result.header.get("b64")
+        if not isinstance(b64, bool):
+            raise InvalidTokenError(
+                'The "b64" (base64url-encode payload) Header Parameter must be a boolean'
+            )
+        if b64 is False:
+            raise InvalidTokenError("JWTs MUST NOT use unencoded payload")
 
     validation_options = options or ValidationOptions()
     validate_standard_claims(result.payload, validation_options, header=result.header)

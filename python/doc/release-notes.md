@@ -9,6 +9,7 @@
 - Added `typ` header validation support with TypeScript-compatible media type normalization.
 - Added `max_token_age` validation with human-readable time span parsing to align with TypeScript `maxTokenAge` behavior.
 - Added rejection of JWTs that request unencoded payloads via `crit: ["b64"]` and `b64: false`.
+- Added `crit` header validation for JWTs, enforcing recognized parameters and required protected values.
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
@@ -105,6 +106,45 @@
   ```
 
   (Source: `src/jwt/verify.ts`)
+
+- Critical header validation and `b64` type checks follow the TypeScript `validateCrit` helper and JWS verification logic:
+
+  ```ts
+  if (
+    !Array.isArray(protectedHeader.crit) ||
+    protectedHeader.crit.length === 0 ||
+    protectedHeader.crit.some((input: string) => typeof input !== 'string' || input.length === 0)
+  ) {
+    throw new Err(
+      '"crit" (Critical) Header Parameter MUST be an array of non-empty strings when present',
+    )
+  }
+
+  for (const parameter of protectedHeader.crit) {
+    if (!recognized.has(parameter)) {
+      throw new JOSENotSupported(`Extension Header Parameter "${parameter}" is not recognized`)
+    }
+
+    if (joseHeader[parameter] === undefined) {
+      throw new Err(`Extension Header Parameter "${parameter}" is missing`)
+    }
+  }
+  ```
+
+  (Source: `src/lib/validate_crit.ts`)
+
+  ```ts
+  if (extensions.has('b64')) {
+    b64 = parsedProt.b64!
+    if (typeof b64 !== 'boolean') {
+      throw new JWSInvalid(
+        'The "b64" (base64url-encode payload) Header Parameter must be a boolean',
+      )
+    }
+  }
+  ```
+
+  (Source: `src/jws/flattened/verify.ts`)
 
 - Human-readable time spans follow the same regex and unit mapping as the TypeScript helper:
 

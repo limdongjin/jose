@@ -158,6 +158,35 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidTokenError):
             verify(token, "secret", algorithms=["HS256"])
 
+    def test_verify_rejects_invalid_crit_header(self) -> None:
+        payload = {"sub": "user-123"}
+
+        token = encode(payload, "secret", "HS256", headers={"crit": "b64"})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
+        token = encode(payload, "secret", "HS256", headers={"crit": []})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
+    def test_verify_rejects_unrecognized_crit_parameter(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256", headers={"crit": ["exp"]})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
+    def test_verify_rejects_missing_crit_parameter(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256", headers={"crit": ["b64"]})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
+    def test_verify_rejects_non_boolean_b64(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256", headers={"crit": ["b64"], "b64": "false"})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
 
 if __name__ == "__main__":
     unittest.main()
