@@ -6,6 +6,7 @@
 - Implemented base64url and JSON helpers with consistent error handling.
 - Added a basic error hierarchy for token, signature, and claim validation.
 - Implemented HS256 signing/verification via HMAC SHA-256.
+- Added HS384/HS512 HMAC signing/verification variants.
 - Added `encode`, `decode`, and `verify` helpers plus basic claim validation for `exp`, `nbf`, and `iat`.
 - Added unit tests for token encoding, decoding, verification, and claim validation.
 
@@ -17,7 +18,7 @@
 
 ## Next steps
 
-- Extend algorithm support (HS384/HS512, RSA, ECDSA).
+- Extend algorithm support (RSA, ECDSA).
 - Add key parsing helpers for PEM/JWK inputs.
 - Expand claim validation to handle `iss`, `aud`, `sub`, and `jti`.
 - Build tests and compatibility vectors aligned with the TypeScript implementation.
