@@ -11,6 +11,7 @@
 
 ### Updated
 - Added verification coverage for issuer/subject/audience matching and `jti` requirements.
+- Aligned `exp` boundary handling and `iat` future checks with the TypeScript `validateClaimsSet` behavior.
 
 ### References (TypeScript parity)
 - Claim presence and issuer/subject/audience matching mirror the TypeScript validation flow:
@@ -66,6 +67,29 @@
       'iat',
       'check_failed',
     )
+  }
+  ```
+
+  (Source: `src/lib/jwt_claims_set.ts`)
+
+- `exp` and `iat` timestamp comparisons align with the TypeScript claim validation rules:
+
+  ```ts
+  if (payload.exp !== undefined) {
+    if (payload.exp <= now - tolerance) {
+      throw new JWTExpired('"exp" claim timestamp check failed', payload, 'exp', 'check_failed')
+    }
+  }
+
+  if (maxTokenAge) {
+    if (age < 0 - tolerance) {
+      throw new JWTClaimValidationFailed(
+        '"iat" claim timestamp check failed (it should be in the past)',
+        payload,
+        'iat',
+        'check_failed',
+      )
+    }
   }
   ```
 

@@ -65,6 +65,12 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidClaimError):
             verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_100))
 
+    def test_verify_rejects_exp_equal_now(self) -> None:
+        payload = {"sub": "user-123", "exp": 1_700_000_000}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_000))
+
     def test_verify_validates_issuer_subject_audience(self) -> None:
         payload = {"iss": "issuer-a", "sub": "user-123", "aud": ["service-a", "service-b"]}
         token = encode(payload, "secret", "HS256")
@@ -134,6 +140,13 @@ class TokenTests(unittest.TestCase):
                 algorithms=["HS256"],
                 options=ValidationOptions(now=1_700_000_100, max_token_age=60),
             )
+
+    def test_verify_allows_future_iat_without_max_token_age(self) -> None:
+        payload = {"sub": "user-123", "iat": 1_700_000_500}
+        token = encode(payload, "secret", "HS256")
+
+        verified = verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_100))
+        self.assertEqual(verified["sub"], "user-123")
 
     def test_decode_requires_three_parts(self) -> None:
         with self.assertRaises(InvalidTokenError):
