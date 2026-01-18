@@ -13,6 +13,9 @@ from jwt import (
     InvalidSignatureError,
     InvalidTokenError,
 )
+from jwt.algorithms import get_algorithm
+from jwt.keys import ensure_bytes
+from jwt.utils import b64url_encode, json_dumps
 
 
 class TokenTests(unittest.TestCase):
@@ -125,7 +128,7 @@ class TokenTests(unittest.TestCase):
 
     def test_verify_checks_typ_header(self) -> None:
         payload = {"sub": "user-123"}
-        token = encode(payload, "secret", "HS256")
+        token = encode(payload, "secret", "HS256", headers={"typ": "JWT"})
         verified = verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(typ="JWT"))
         self.assertEqual(verified["sub"], "user-123")
 
@@ -176,7 +179,12 @@ class TokenTests(unittest.TestCase):
 
     def test_verify_rejects_unencoded_payload_header(self) -> None:
         payload = {"sub": "user-123"}
-        token = encode(payload, "secret", "HS256", headers={"b64": False, "crit": ["b64"]})
+        header = {"alg": "HS256", "b64": False, "crit": ["b64"]}
+        encoded_header = b64url_encode(json_dumps(header).encode("utf-8"))
+        encoded_payload = b64url_encode(json_dumps(payload).encode("utf-8"))
+        signing_input = f"{encoded_header}.{encoded_payload}".encode("ascii")
+        signature = get_algorithm("HS256").sign(ensure_bytes("secret"), signing_input)
+        token = f"{encoded_header}.{encoded_payload}.{b64url_encode(signature)}"
         with self.assertRaises(InvalidTokenError):
             verify(token, "secret", algorithms=["HS256"])
 
@@ -208,6 +216,11 @@ class TokenTests(unittest.TestCase):
         token = encode(payload, "secret", "HS256", headers={"crit": ["b64"], "b64": "false"})
         with self.assertRaises(InvalidTokenError):
             verify(token, "secret", algorithms=["HS256"])
+
+    def test_encode_rejects_unencoded_payload_request(self) -> None:
+        payload = {"sub": "user-123"}
+        with self.assertRaises(InvalidTokenError):
+            encode(payload, "secret", "HS256", headers={"b64": False, "crit": ["b64"]})
 
 
 if __name__ == "__main__":

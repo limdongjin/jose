@@ -16,6 +16,8 @@
 - Added human-readable time span parsing for `leeway` (clock tolerance) when validating time-based claims.
 - Added a JWT verification guard that rejects `crit: ["b64"]` with `b64: false` unencoded payload requests.
 - Added `crit` header validation for JWTs to enforce recognized parameters and `b64` boolean handling.
+- Removed the implicit `typ: "JWT"` header from `encode`, requiring explicit header configuration when needed.
+- Added signing-time rejection of `crit: ["b64"]` with `b64: false` to match TypeScript JWT signing behavior.
 
 ## Design notes
 
@@ -68,6 +70,30 @@
   ```
 
   (Source: `src/jwt/verify.ts`)
+
+- JWT signing does not auto-populate a `typ` header, mirroring the TypeScript SignJWT flow which only uses explicitly set protected headers:
+
+  ```ts
+  const sig = new CompactSign(this.#jwt.data())
+  sig.setProtectedHeader(this.#protectedHeader)
+  ```
+
+  (Source: `src/jwt/sign.ts`)
+
+- SignJWT rejects unencoded payload requests during signing when `crit` includes `b64` and `b64` is `false`:
+
+  ```ts
+  if (
+    Array.isArray(this.#protectedHeader?.crit) &&
+    this.#protectedHeader.crit.includes('b64') &&
+    // @ts-expect-error
+    this.#protectedHeader.b64 === false
+  ) {
+    throw new JWTInvalid('JWTs MUST NOT use unencoded payload')
+  }
+  ```
+
+  (Source: `src/jwt/sign.ts`)
 
 - Critical header validation mirrors the TypeScript `validateCrit` helper and JWS `b64` type checks:
 

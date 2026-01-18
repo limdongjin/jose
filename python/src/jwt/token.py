@@ -70,9 +70,12 @@ def encode(
     if not isinstance(payload, Mapping):
         raise InvalidTokenError("Payload must be a mapping")
 
-    header_data: Dict[str, Any] = {"typ": "JWT", "alg": alg}
+    header_data: Dict[str, Any] = {"alg": alg}
     if headers:
         header_data.update(headers)
+        crit = headers.get("crit")
+        if isinstance(crit, list) and "b64" in crit and headers.get("b64") is False:
+            raise InvalidTokenError("JWTs MUST NOT use unencoded payload")
 
     encoded_header = b64url_encode(json_dumps(header_data).encode("utf-8"))
     encoded_payload = b64url_encode(json_dumps(dict(payload)).encode("utf-8"))
