@@ -12,6 +12,7 @@
 - Added unit tests for token encoding, decoding, verification, and claim validation.
 - Added `kty: "oct"` JWK handling for HMAC keys to align with TypeScript import behavior.
 - Added `typ` header validation with media type normalization to align with TypeScript JWT verification.
+- Added `max_token_age` validation and human-readable time span parsing for `iat` claim enforcement.
 
 ## Design notes
 

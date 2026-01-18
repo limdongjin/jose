@@ -104,6 +104,37 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidClaimError):
             verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(typ="at+jwt"))
 
+    def test_verify_enforces_max_token_age(self) -> None:
+        payload = {"sub": "user-123", "iat": 1_700_000_000}
+        token = encode(payload, "secret", "HS256")
+
+        verified = verify(
+            token,
+            "secret",
+            algorithms=["HS256"],
+            options=ValidationOptions(now=1_700_000_100, max_token_age="2 minutes"),
+        )
+        self.assertEqual(verified["sub"], "user-123")
+
+        with self.assertRaises(InvalidClaimError):
+            verify(
+                token,
+                "secret",
+                algorithms=["HS256"],
+                options=ValidationOptions(now=1_700_000_100, max_token_age=50),
+            )
+
+    def test_verify_requires_iat_for_max_token_age(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(
+                token,
+                "secret",
+                algorithms=["HS256"],
+                options=ValidationOptions(now=1_700_000_100, max_token_age=60),
+            )
+
     def test_decode_requires_three_parts(self) -> None:
         with self.assertRaises(InvalidTokenError):
             decode("not-a-jwt")
