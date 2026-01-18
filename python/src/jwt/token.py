@@ -83,6 +83,10 @@ def verify(
     algorithm = get_algorithm(alg)
     algorithm.verify(ensure_bytes(key), result.signing_input, result.signature)
 
+    crit = result.header.get("crit")
+    if isinstance(crit, list) and "b64" in crit and result.header.get("b64") is False:
+        raise InvalidTokenError("JWTs MUST NOT use unencoded payload")
+
     validation_options = options or ValidationOptions()
     validate_standard_claims(result.payload, validation_options, header=result.header)
 

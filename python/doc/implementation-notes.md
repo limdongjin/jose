@@ -13,6 +13,7 @@
 - Added `kty: "oct"` JWK handling for HMAC keys to align with TypeScript import behavior.
 - Added `typ` header validation with media type normalization to align with TypeScript JWT verification.
 - Added `max_token_age` validation and human-readable time span parsing for `iat` claim enforcement.
+- Added a JWT verification guard that rejects `crit: ["b64"]` with `b64: false` unencoded payload requests.
 
 ## Design notes
 
@@ -55,3 +56,13 @@
   ```
 
   (Source: `src/lib/jwt_claims_set.ts`)
+
+- Unencoded payloads are rejected to match the TypeScript JWT verifier:
+
+  ```ts
+  if (verified.protectedHeader.crit?.includes('b64') && verified.protectedHeader.b64 === false) {
+    throw new JWTInvalid('JWTs MUST NOT use unencoded payload')
+  }
+  ```
+
+  (Source: `src/jwt/verify.ts`)

@@ -152,6 +152,12 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidTokenError):
             decode("not-a-jwt")
 
+    def test_verify_rejects_unencoded_payload_header(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256", headers={"b64": False, "crit": ["b64"]})
+        with self.assertRaises(InvalidTokenError):
+            verify(token, "secret", algorithms=["HS256"])
+
 
 if __name__ == "__main__":
     unittest.main()
