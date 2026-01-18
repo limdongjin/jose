@@ -8,6 +8,7 @@
 - Implemented HS256 signing/verification via HMAC SHA-256.
 - Added HS384/HS512 HMAC signing/verification variants.
 - Added `encode`, `decode`, and `verify` helpers plus basic claim validation for `exp`, `nbf`, and `iat`.
+- Added issuer (`iss`), subject (`sub`), audience (`aud`), and JWT ID (`jti`) validation with optional requirements.
 - Added unit tests for token encoding, decoding, verification, and claim validation.
 
 ## Design notes
@@ -15,10 +16,10 @@
 - Public helpers live in `jwt/__init__.py` to keep the API surface small.
 - Algorithm selection uses a registry so additional algorithms can be added without changing the public API.
 - Validation options are grouped in a dataclass to keep verification configuration explicit and typed.
+- Claim validation keeps string-only enforcement for identity claims to match TypeScript behavior.
 
 ## Next steps
 
 - Extend algorithm support (RSA, ECDSA).
 - Add key parsing helpers for PEM/JWK inputs.
-- Expand claim validation to handle `iss`, `aud`, `sub`, and `jti`.
 - Build tests and compatibility vectors aligned with the TypeScript implementation.

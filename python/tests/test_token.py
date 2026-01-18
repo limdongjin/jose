@@ -57,6 +57,36 @@ class TokenTests(unittest.TestCase):
         with self.assertRaises(InvalidClaimError):
             verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(now=1_700_000_100))
 
+    def test_verify_validates_issuer_subject_audience(self) -> None:
+        payload = {"iss": "issuer-a", "sub": "user-123", "aud": ["service-a", "service-b"]}
+        token = encode(payload, "secret", "HS256")
+
+        verified = verify(
+            token,
+            "secret",
+            algorithms=["HS256"],
+            options=ValidationOptions(issuer="issuer-a", subject="user-123", audience="service-b"),
+        )
+        self.assertEqual(verified["iss"], "issuer-a")
+
+    def test_verify_rejects_mismatched_issuer(self) -> None:
+        payload = {"iss": "issuer-a", "sub": "user-123"}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(issuer="issuer-b"))
+
+    def test_verify_rejects_mismatched_audience(self) -> None:
+        payload = {"aud": "service-a"}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(audience="service-b"))
+
+    def test_verify_requires_jti(self) -> None:
+        payload = {"sub": "user-123"}
+        token = encode(payload, "secret", "HS256")
+        with self.assertRaises(InvalidClaimError):
+            verify(token, "secret", algorithms=["HS256"], options=ValidationOptions(require_jti=True))
+
     def test_decode_requires_three_parts(self) -> None:
         with self.assertRaises(InvalidTokenError):
             decode("not-a-jwt")
