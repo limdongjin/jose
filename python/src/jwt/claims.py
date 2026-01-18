@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Any, Mapping, Optional
+from typing import Any, Iterable, Mapping, Optional
 
 from .errors import InvalidClaimError
 
@@ -16,6 +16,13 @@ class ValidationOptions:
     require_exp: bool = False
     require_nbf: bool = False
     require_iat: bool = False
+    require_iss: bool = False
+    require_sub: bool = False
+    require_aud: bool = False
+    require_jti: bool = False
+    issuer: Optional[str | Iterable[str]] = None
+    subject: Optional[str] = None
+    audience: Optional[str | Iterable[str]] = None
 
     def current_time(self) -> int:
         if self.now is not None:
@@ -29,6 +36,39 @@ def _ensure_int(value: Any, claim: str) -> int:
     return int(value)
 
 
+def _ensure_str(value: Any, claim: str) -> str:
+    if not isinstance(value, str):
+        raise InvalidClaimError(f"Claim '{claim}' must be a string")
+    return value
+
+
+def _normalize_expected(expected: str | Iterable[str], claim: str) -> list[str]:
+    if isinstance(expected, str):
+        return [expected]
+    if isinstance(expected, Iterable):
+        values = list(expected)
+        if not values:
+            raise InvalidClaimError(f"Claim '{claim}' expected values must not be empty")
+        for item in values:
+            if not isinstance(item, str):
+                raise InvalidClaimError(f"Claim '{claim}' expected values must be strings")
+        return values
+    raise InvalidClaimError(f"Claim '{claim}' expected values must be a string or list")
+
+
+def _normalize_audience(value: Any) -> list[str]:
+    if isinstance(value, str):
+        return [value]
+    if isinstance(value, list):
+        if not value:
+            raise InvalidClaimError("Claim 'aud' must not be an empty list")
+        for item in value:
+            if not isinstance(item, str):
+                raise InvalidClaimError("Claim 'aud' must contain only strings")
+        return value
+    raise InvalidClaimError("Claim 'aud' must be a string or list of strings")
+
+
 def validate_standard_claims(payload: Mapping[str, Any], options: ValidationOptions) -> None:
     now = options.current_time()
     leeway = options.leeway
@@ -39,6 +79,45 @@ def validate_standard_claims(payload: Mapping[str, Any], options: ValidationOpti
         raise InvalidClaimError("Claim 'nbf' is required")
     if options.require_iat and "iat" not in payload:
         raise InvalidClaimError("Claim 'iat' is required")
+    if options.require_iss and "iss" not in payload:
+        raise InvalidClaimError("Claim 'iss' is required")
+    if options.require_sub and "sub" not in payload:
+        raise InvalidClaimError("Claim 'sub' is required")
+    if options.require_aud and "aud" not in payload:
+        raise InvalidClaimError("Claim 'aud' is required")
+    if options.require_jti and "jti" not in payload:
+        raise InvalidClaimError("Claim 'jti' is required")
+
+    if options.issuer is not None:
+        if "iss" not in payload:
+            raise InvalidClaimError("Claim 'iss' is required")
+        issuer = _ensure_str(payload["iss"], "iss")
+        expected_issuers = _normalize_expected(options.issuer, "iss")
+        if issuer not in expected_issuers:
+            raise InvalidClaimError("Claim 'iss' does not match expected value")
+    elif "iss" in payload:
+        _ensure_str(payload["iss"], "iss")
+
+    if options.subject is not None:
+        if "sub" not in payload:
+            raise InvalidClaimError("Claim 'sub' is required")
+        subject = _ensure_str(payload["sub"], "sub")
+        if subject != options.subject:
+            raise InvalidClaimError("Claim 'sub' does not match expected value")
+    elif "sub" in payload:
+        _ensure_str(payload["sub"], "sub")
+
+    if "aud" in payload:
+        aud_list = _normalize_audience(payload["aud"])
+        if options.audience is not None:
+            expected_audience = set(_normalize_expected(options.audience, "aud"))
+            if not expected_audience.intersection(aud_list):
+                raise InvalidClaimError("Claim 'aud' does not match expected value")
+    elif options.audience is not None:
+        raise InvalidClaimError("Claim 'aud' is required")
+
+    if "jti" in payload:
+        _ensure_str(payload["jti"], "jti")
 
     if "exp" in payload:
         exp = _ensure_int(payload["exp"], "exp")
